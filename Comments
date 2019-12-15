@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
-
+//Outline of AES: Key, Key Expansion, AddRoundKey (Initial Round), SubBytes, ShiftRows, MixColumns, AddRoundKey (looping rounds), SubBytes, ShiftRows, AddRoundKey (Final Round). ENCRYPTED
+//Replacing each byte with a different byte dependant on the key
+//each of these blocks of code are directories to pull from
 unsigned char s[256] = 
  {
     0x63, 0x7C, 0x77, 0x7B, 0xF2, 0x6B, 0x6F, 0xC5, 0x30, 0x01, 0x67, 0x2B, 0xFE, 0xD7, 0xAB, 0x76,
@@ -176,11 +178,11 @@ unsigned char * g (unsigned char wInput[4], int counter)
         temp[i] = wInput[(i+1)];
     }
     temp[3] = a;
-
+// replaces byte with s_box byte
     for (int i =0; i<4;i++)
         temp[i] = s[temp[i]];
 
-    //unsigned char array formed for xoring with rcon
+
 
     unsigned char array2[4] = "";
     array2[0] = rcon[counter];
@@ -191,7 +193,7 @@ unsigned char * g (unsigned char wInput[4], int counter)
     return wReady;
 }
 
-
+//Key expansion takes 16-byte (four word) and turns it into 176 bytes (44 words). This is so each round can use a different part of the key.
 unsigned char * keyExpansion(unsigned char key[16])
 {
     unsigned char words[44][4];
@@ -205,7 +207,7 @@ unsigned char * keyExpansion(unsigned char key[16])
     
     unsigned char * expandedKey = malloc(176);
     
-    int byteCount = 0; //this is to keep a count on the bytes of the expandedKey array
+    int byteCount = 0; 
     
     for (int i=0;i<16;i++)
             expandedKey[i] = key[i];
@@ -247,6 +249,7 @@ unsigned char * keyExpansion(unsigned char key[16])
     }
     return expandedKey;
 }
+//mixes columns by converting columns into polynomials, coefficients over the Galois Field 2^8, and multiplied by 3x^3+x^2+x+2 mod x^4+1
 
 void mixColumns(unsigned char * plainText)
 {
@@ -266,6 +269,7 @@ void mixColumns(unsigned char * plainText)
     }
     free(tempC);
 }
+//inverse mix column function, uses inverse polynomial 11x^3+13x^2+9x+14 (inverse of 3x^3+x^2+x+2)
 void inverseMixedColumn (unsigned char * plainText)
 {
     unsigned char * tempC = malloc(18);
@@ -283,6 +287,7 @@ void inverseMixedColumn (unsigned char * plainText)
     }
     free(tempC);
 }
+//shifts row by 1
 void byteSubShiftRow(unsigned char * state)
 {
 
@@ -314,6 +319,7 @@ void byteSubShiftRow(unsigned char * state)
         state[i] = tmp[i];
     }
 }
+//Shifts the rows back, inverse of original function
 void inverseByteSubShiftRow(unsigned char * plainText)
 {
     unsigned char * temp = malloc(16);
@@ -340,7 +346,7 @@ void inverseByteSubShiftRow(unsigned char * plainText)
     free(temp);
 }
 
-
+//Using the previously defined functions, a new function implements the encryption. First it expands the key, then goes through 9 rounds where it shifts the rows, mixes the columns, and substitutes the bytes
 void AESEncryption(unsigned char * plainText, unsigned char * expandedKey, unsigned char * cipher)
 {
     unsigned char * state = malloc(16);
@@ -375,7 +381,7 @@ void AESEncryption(unsigned char * plainText, unsigned char * expandedKey, unsig
     }
     free(state);
 }
-
+//Next function uses the same functions and some inverse functions to decrypt. It uses the previous keys.
 void AESDecryption(unsigned char * cipher, unsigned char * expandedKey, unsigned char * plainText)
 {
     unsigned char * state = malloc(16);
